@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import QRCode from '../shared/QRCode';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 
 interface QuickGroupBetProps {
   className?: string;
@@ -13,13 +15,37 @@ interface QuickGroupBetProps {
 const QuickGroupBet = ({ className }: QuickGroupBetProps) => {
   const [qrGenerated, setQrGenerated] = useState(false);
   const [copied, setCopied] = useState(false);
+  const navigate = useNavigate();
   
-  const groupId = "BETXYZ123";
-  const groupLink = `https://betmoment.app/join/${groupId}`;
+  const groupId = qrGenerated ? `BET${uuidv4().substring(0, 8).toUpperCase()}` : "";
+  const groupLink = `https://betmoment.app/group/${groupId}`;
   
   const handleGenerateQR = () => {
     setQrGenerated(true);
     toast.success("QR code generated! Share with friends to join your bet instantly");
+    
+    // Create a new group bet in localStorage
+    if (groupId) {
+      const newGroupBet = {
+        id: groupId,
+        title: "New Group Bet",
+        description: "Describe your bet here",
+        creator: "You",
+        createdAt: new Date().toISOString(),
+        participants: 1,
+        options: [
+          { id: "opt-1", label: "Yes", percentage: 0, votes: 0 },
+          { id: "opt-2", label: "No", percentage: 0, votes: 0 }
+        ],
+        comments: [],
+        stake: { type: "points", value: 100 },
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      };
+      
+      // Save to localStorage
+      const existingGroupBets = JSON.parse(localStorage.getItem('groupBets') || '[]');
+      localStorage.setItem('groupBets', JSON.stringify([...existingGroupBets, newGroupBet]));
+    }
   };
   
   const handleCopyLink = () => {
@@ -43,10 +69,15 @@ const QuickGroupBet = ({ className }: QuickGroupBetProps) => {
         toast.success("Shared successfully!");
       } catch (err) {
         toast.error("Error sharing");
+        handleCopyLink();
       }
     } else {
       handleCopyLink();
     }
+  };
+  
+  const handleGoToGroupBet = () => {
+    navigate(`/group/${groupId}`);
   };
   
   return (
@@ -98,10 +129,10 @@ const QuickGroupBet = ({ className }: QuickGroupBetProps) => {
             
             <button
               className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-gradient-to-r from-blue-600 to-purple-500 text-white hover:brightness-110 transition-all text-sm"
-              onClick={handleShare}
+              onClick={handleGoToGroupBet}
             >
               <Share2 className="h-4 w-4" />
-              Share
+              Manage Bet
             </button>
           </div>
         </div>

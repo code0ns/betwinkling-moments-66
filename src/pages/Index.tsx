@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
@@ -118,14 +119,15 @@ const Index = () => {
               <div className="mb-6">
                 <h2 className="text-xl font-bold mb-6">Featured Bet</h2>
                 <BetDetail 
+                  id="featured-bet-1"
                   title="Will Alex actually show up to the party?"
                   description="Alex always says he'll come but never shows up. Let's see if tonight is different!"
                   participants={12}
                   timeLeft="2h left"
                   pool="$600"
                   options={[
-                    { label: "Yes", percentage: 67, votes: 8 },
-                    { label: "No", percentage: 33, votes: 4 }
+                    { id: "opt-1", label: "Yes", percentage: 67, votes: 8 },
+                    { id: "opt-2", label: "No", percentage: 33, votes: 4 }
                   ]}
                   insights="Looks like everyone's confident Alex will actually show up for once!"
                 />
