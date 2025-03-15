@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Plus, Clock, DollarSign, Award, Flame } from 'lucide-react';
+import { X, Plus, Clock, DollarSign, Award, Flame, Share2 } from 'lucide-react';
 import Button from '../shared/Button';
 import QRCode from '../shared/QRCode';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,8 @@ const CreateBetModal = ({ isOpen, onClose }: CreateBetModalProps) => {
     options: ['Yes', 'No'],
     stakeType: 'points',
     stakeValue: 100,
+    // Ensure stakeValue is initialized as a number
+    stakeText: '',
   });
   
   if (!isOpen) return null;
@@ -300,8 +302,8 @@ const CreateBetModal = ({ isOpen, onClose }: CreateBetModalProps) => {
                   id="stakeValue"
                   className="w-full px-4 py-2.5 rounded-lg bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary/50 outline-none transition-all min-h-[100px]"
                   placeholder="Describe what the loser has to do..."
-                  value={typeof betDetails.stakeValue === 'string' ? betDetails.stakeValue : ''}
-                  onChange={(e) => setBetDetails({...betDetails, stakeValue: e.target.value})}
+                  value={betDetails.stakeText}
+                  onChange={(e) => setBetDetails({...betDetails, stakeText: e.target.value})}
                 />
               ) : (
                 <input
@@ -309,7 +311,7 @@ const CreateBetModal = ({ isOpen, onClose }: CreateBetModalProps) => {
                   type="number"
                   className="w-full px-4 py-2.5 rounded-lg bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary/50 outline-none transition-all"
                   placeholder={betDetails.stakeType === 'money' ? "5" : "100"}
-                  value={typeof betDetails.stakeValue === 'number' ? betDetails.stakeValue : 0}
+                  value={betDetails.stakeValue}
                   onChange={(e) => setBetDetails({...betDetails, stakeValue: Number(e.target.value)})}
                 />
               )}
@@ -335,7 +337,7 @@ const CreateBetModal = ({ isOpen, onClose }: CreateBetModalProps) => {
             <div className="w-full max-w-md bg-secondary/30 rounded-lg p-4 border border-border">
               <h3 className="font-semibold text-lg mb-1">{betDetails.title}</h3>
               <p className="text-sm text-muted-foreground mb-2">
-                {betDetails.stakeType === 'money' ? '$' : ''}{betDetails.stakeValue} {betDetails.stakeType}
+                {betDetails.stakeType === 'money' ? '$' : ''}{betDetails.stakeType === 'dare' ? betDetails.stakeText : betDetails.stakeValue} {betDetails.stakeType !== 'dare' ? betDetails.stakeType : ''}
               </p>
               
               <div className="flex justify-center space-x-2 mt-4">
@@ -395,9 +397,9 @@ const CreateBetModal = ({ isOpen, onClose }: CreateBetModalProps) => {
               (step === 'type' && !selectedType) ||
               (step === 'details' && !betDetails.title) ||
               (step === 'stakes' && (
-                (betDetails.stakeType === 'money' && (typeof betDetails.stakeValue !== 'number' || betDetails.stakeValue <= 0)) ||
-                (betDetails.stakeType === 'points' && (typeof betDetails.stakeValue !== 'number' || betDetails.stakeValue <= 0)) ||
-                (betDetails.stakeType === 'dare' && (!betDetails.stakeValue || betDetails.stakeValue === ''))
+                (betDetails.stakeType === 'money' && betDetails.stakeValue <= 0) ||
+                (betDetails.stakeType === 'points' && betDetails.stakeValue <= 0) ||
+                (betDetails.stakeType === 'dare' && !betDetails.stakeText)
               ))
             }
             onClick={step === 'share' ? onClose : handleNextStep}

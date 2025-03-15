@@ -1,47 +1,51 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AppLayout from '@/components/layout/AppLayout';
 import UserAvatar from '@/components/profile/UserAvatar';
 import Button from '@/components/shared/Button';
-import { userStats, trendingBets, recentBets } from '@/lib/data';
-import { Settings, Award, ChevronRight, Trophy, ArrowUp, Check, Clock } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Trophy, ThumbsDown, Calendar, Download, User, Edit } from 'lucide-react';
+import { userStats } from '@/lib/data';
+import Achievement from '@/components/profile/Achievement';
+import BetItem from '@/components/profile/BetItem';
 import { cn } from '@/lib/utils';
 
 const Profile = () => {
-  const allBets = [...trendingBets, ...recentBets].slice(0, 5);
+  const [activeTab, setActiveTab] = useState("active");
   
   return (
     <AppLayout>
-      <div className="container px-4">
-        <div className="py-8 md:py-12 animate-fade-in">
-          {/* Profile header */}
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-10">
-            <div className="flex items-center gap-6">
-              <div className="relative">
-                <div className="absolute -inset-1.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur-md opacity-70 animate-pulse"></div>
-                <UserAvatar 
-                  size="lg" 
-                  initials="JS" 
-                  className="h-20 w-20 ring-4 ring-background"
-                />
-              </div>
+      <div className="container px-4 py-8">
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <UserAvatar 
+                size="lg"
+                src="/lovable-uploads/c401c374-948d-461a-8657-770b5108795a.png"
+                alt="Your profile"
+              />
               
-              <div className="text-left">
+              <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">John Smith</h1>
-                  <div className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                    Premium
-                  </div>
+                  <h1 className="text-2xl font-bold">You</h1>
+                  <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded-full">
+                    Bet Master
+                  </span>
                 </div>
-                <p className="text-muted-foreground">@johnsmith</p>
-                <div className="flex items-center gap-4 mt-2">
-                  <div className="flex items-center">
-                    <Trophy className="h-4 w-4 mr-1 text-yellow-500" />
-                    <span className="text-sm font-medium">{userStats.wonBets} wins</span>
+                
+                <div className="flex items-center gap-4 mt-2 text-sm">
+                  <div className="flex items-center gap-1">
+                    <Trophy className="h-4 w-4 text-yellow-500" />
+                    <span>{userStats.wonBets} wins</span>
                   </div>
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-1 text-blue-500" />
-                    <span className="text-sm font-medium">Since Jan 2023</span>
+                  <div className="flex items-center gap-1">
+                    <ThumbsDown className="h-4 w-4 text-red-400" />
+                    <span>{userStats.lostBets} losses</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4 text-blue-400" />
+                    <span>{userStats.totalBets} bets created</span>
                   </div>
                 </div>
               </div>
@@ -49,147 +53,139 @@ const Profile = () => {
             
             <Button 
               variant="outline" 
-              size="sm"
-              leadingIcon={<Settings className="h-4 w-4" />}
+              leadingIcon={<Edit className="h-4 w-4" />}
             >
               Edit Profile
             </Button>
           </div>
           
-          {/* Stats cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-            <div className="glass-card p-5 rounded-xl">
-              <h3 className="text-sm text-muted-foreground mb-1">Total Bets</h3>
-              <p className="text-2xl font-bold">{userStats.totalBets}</p>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium">Win Rate</span>
+              <span className="text-sm font-medium text-primary">{Math.round((userStats.wonBets / userStats.totalBets) * 100)}%</span>
             </div>
-            
-            <div className="glass-card p-5 rounded-xl">
-              <h3 className="text-sm text-muted-foreground mb-1">Won Bets</h3>
-              <div className="flex items-end gap-2">
-                <p className="text-2xl font-bold">{userStats.wonBets}</p>
-                <div className="flex items-center text-green-500 text-xs font-medium pb-1">
-                  <ArrowUp className="h-3 w-3 mr-0.5" />
-                  <span>68%</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="glass-card p-5 rounded-xl">
-              <h3 className="text-sm text-muted-foreground mb-1">Current Streak</h3>
-              <p className="text-2xl font-bold">{userStats.currentStreak}🔥</p>
-            </div>
-            
-            <div className="glass-card p-5 rounded-xl">
-              <h3 className="text-sm text-muted-foreground mb-1">Points</h3>
-              <p className="text-2xl font-bold">{userStats.pointsEarned}</p>
-            </div>
-          </div>
-          
-          {/* Achievements */}
-          <div className="mb-10">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-yellow-500" />
-                <h2 className="text-xl font-bold">Achievements</h2>
-              </div>
-              <Button variant="ghost" size="sm" trailingIcon={<ChevronRight className="h-4 w-4" />}>
-                View all
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {userStats.achievements.map((achievement) => (
-                <div 
-                  key={achievement.id} 
-                  className={cn(
-                    "relative rounded-xl p-5 transition-all duration-300 glass-card overflow-hidden",
-                    achievement.completed ? "opacity-100" : "opacity-60"
-                  )}
-                >
-                  {achievement.completed && (
-                    <div className="absolute top-3 right-3 h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center">
-                      <Check className="h-3.5 w-3.5 text-green-500" />
-                    </div>
-                  )}
-                  
-                  <div className="mb-4">
-                    <div className={cn(
-                      "h-12 w-12 rounded-full flex items-center justify-center",
-                      achievement.completed ? "bg-yellow-500/10 text-yellow-500" : "bg-secondary/50 text-muted-foreground"
-                    )}>
-                      <Trophy className="h-6 w-6" />
-                    </div>
-                  </div>
-                  
-                  <h3 className="font-semibold mb-1">{achievement.name}</h3>
-                  <p className="text-sm text-muted-foreground">{achievement.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Recent activity */}
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Recent Activity</h2>
-              <Button variant="ghost" size="sm" trailingIcon={<ChevronRight className="h-4 w-4" />}>
-                View all
-              </Button>
-            </div>
-            
-            <div className="glass-card rounded-xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Bet</th>
-                      <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Type</th>
-                      <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Stake</th>
-                      <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
-                      <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {allBets.map((bet) => (
-                      <tr key={bet.id} className="hover:bg-secondary/30 transition-colors">
-                        <td className="px-6 py-4 text-sm font-medium">
-                          <div className="flex items-center space-x-3">
-                            <div className={`h-8 w-8 rounded-full ${
-                              bet.stake.type === 'money' ? 'bg-green-500/10 text-green-500' : 
-                              bet.stake.type === 'points' ? 'bg-blue-500/10 text-blue-500' : 
-                              'bg-orange-500/10 text-orange-500'
-                            } flex items-center justify-center`}>
-                              {bet.stake.type === 'money' ? '$' : 
-                               bet.stake.type === 'points' ? 'P' : 'D'}
-                            </div>
-                            <span className="truncate max-w-[200px]">{bet.title}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          {bet.options && bet.options.length === 2 && bet.options[0].label === 'Yes' ? 'Yes/No' : 
-                           bet.options && bet.options.length > 2 ? 'Multiple Choice' : 'Time-based'}
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          {bet.stake.type === 'money' && <span>${bet.stake.value}</span>}
-                          {bet.stake.type === 'points' && <span>{bet.stake.value} pts</span>}
-                          {bet.stake.type === 'dare' && <span>Dare</span>}
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500">
-                            Active
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">
-                          {bet.expiresAt?.toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="h-2 bg-secondary/50 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-primary to-blue-400" 
+                style={{ width: `${(userStats.wonBets / userStats.totalBets) * 100}%` }}
+              />
             </div>
           </div>
         </div>
+        
+        <Tabs defaultValue="active" className="w-full" onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-3 w-full mb-8 bg-secondary/20">
+            <TabsTrigger value="active">Active Bets</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="achievements">Achievements</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="active" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <BetItem 
+                title="Will Alex actually go to the gym this week?"
+                type="Yes/No"
+                expiresIn="3 days"
+                options={["Yes", "No"]}
+                creator="Emily"
+                value="10 pts"
+                gradient="orange"
+              />
+              <BetItem 
+                title="Which hackathon project will win first place?"
+                type="Multiple Choice"
+                expiresIn="2 days"
+                options={["Team Alpha", "Team Beta", "Team Gamma", "Team Delta"]}
+                creator="Jake"
+                value="80 ₿"
+                gradient="blue"
+              />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="history" className="mt-0">
+            {activeTab === "history" && (
+              <div className="flex flex-col items-center justify-center py-8 space-y-6">
+                <div className="h-24 w-24 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
+                  <Calendar className="h-12 w-12 text-blue-400" />
+                </div>
+                <h2 className="text-2xl font-bold">Your Bet History</h2>
+                <p className="text-muted-foreground text-center max-w-md">
+                  Track your past bets, see what you've won and lost, and learn from your betting patterns.
+                </p>
+                <div className="flex flex-col w-full max-w-md gap-3">
+                  <Button>View All Settled Bets</Button>
+                  <Button variant="outline" leadingIcon={<Download className="h-4 w-4" />}>
+                    Download Betting Stats
+                  </Button>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="achievements" className="mt-0">
+            {activeTab === "achievements" && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <Achievement 
+                  title="Bet Master"
+                  icon={<Trophy />}
+                  isUnlocked={true}
+                  iconColor="bg-purple-500/20"
+                  iconTextColor="text-purple-500"
+                />
+                <Achievement 
+                  title="Risk Taker"
+                  icon={<Trophy />} 
+                  isUnlocked={true}
+                  iconColor="bg-blue-500/20"
+                  iconTextColor="text-blue-500"
+                />
+                <Achievement 
+                  title="Lucky Streak"
+                  icon={<Trophy />}
+                  isUnlocked={true}
+                  iconColor="bg-indigo-500/20"
+                  iconTextColor="text-indigo-500"
+                />
+                <Achievement 
+                  title="Creator"
+                  icon={<Trophy />}
+                  isUnlocked={false}
+                  iconColor="bg-gray-500/20"
+                  iconTextColor="text-gray-500"
+                />
+                <Achievement 
+                  title="Big Winner"
+                  icon={<Trophy />}
+                  isUnlocked={false}
+                  iconColor="bg-gray-500/20"
+                  iconTextColor="text-gray-500"
+                />
+                <Achievement 
+                  title="Dare Devil"
+                  icon={<Trophy />}
+                  isUnlocked={false}
+                  iconColor="bg-gray-500/20"
+                  iconTextColor="text-gray-500"
+                />
+                <Achievement 
+                  title="Trend Setter"
+                  icon={<Trophy />}
+                  isUnlocked={false}
+                  iconColor="bg-gray-500/20"
+                  iconTextColor="text-gray-500"
+                />
+                <Achievement 
+                  title="Quick Draw"
+                  icon={<Trophy />}
+                  isUnlocked={false}
+                  iconColor="bg-gray-500/20"
+                  iconTextColor="text-gray-500"
+                />
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );

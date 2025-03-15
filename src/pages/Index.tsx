@@ -1,10 +1,15 @@
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 import TrendingBets from '@/components/bet/TrendingBets';
 import BetCard from '@/components/bet/BetCard';
 import Button from '@/components/shared/Button';
 import CreateBetModal from '@/components/bet/CreateBetModal';
+import QuickGroupBet from '@/components/features/QuickGroupBet';
+import ChaosWheel from '@/components/features/ChaosWheel';
+import BestLoss from '@/components/features/BestLoss';
+import BetDetail from '@/components/bet/BetDetail';
 import { trendingBets, recentBets } from '@/lib/data';
 import { Plus, Flame, ChevronRight, Clock, RefreshCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -105,25 +110,53 @@ const Index = () => {
           </div>
         </section>
         
+        {/* Featured bet */}
+        <section className="py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <div className="mb-6">
+                <h2 className="text-xl font-bold mb-6">Featured Bet</h2>
+                <BetDetail 
+                  title="Will Alex actually show up to the party?"
+                  description="Alex always says he'll come but never shows up. Let's see if tonight is different!"
+                  participants={12}
+                  timeLeft="2h left"
+                  pool="$600"
+                  options={[
+                    { label: "Yes", percentage: 67, votes: 8 },
+                    { label: "No", percentage: 33, votes: 4 }
+                  ]}
+                  insights="Looks like everyone's confident Alex will actually show up for once!"
+                />
+              </div>
+              
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold">Recent Bets</h2>
+                  <Button variant="ghost" size="sm" trailingIcon={<ChevronRight className="h-4 w-4" />}>
+                    View all
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {recentBets.map((bet) => (
+                    <BetCard key={bet.id} bet={bet} />
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <QuickGroupBet />
+              <ChaosWheel />
+              <BestLoss />
+            </div>
+          </div>
+        </section>
+        
         {/* Trending bets section */}
         <section className="py-8">
           <TrendingBets bets={trendingBets} />
-        </section>
-        
-        {/* Recent bets section */}
-        <section className="py-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold">Recent Bets</h2>
-            <Button variant="ghost" size="sm" trailingIcon={<ChevronRight className="h-4 w-4" />}>
-              View all
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {recentBets.map((bet) => (
-              <BetCard key={bet.id} bet={bet} />
-            ))}
-          </div>
         </section>
       </div>
       
