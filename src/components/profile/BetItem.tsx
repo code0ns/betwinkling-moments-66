@@ -11,6 +11,7 @@ interface BetItemProps {
   creator: string;
   value: string;
   gradient: "orange" | "blue" | "green" | "purple";
+  onClick?: () => void;
 }
 
 const BetItem = ({ 
@@ -20,7 +21,8 @@ const BetItem = ({
   options, 
   creator,
   value,
-  gradient
+  gradient,
+  onClick
 }: BetItemProps) => {
   const gradientClasses = {
     orange: "bg-gradient-to-r from-orange-500 to-amber-500",
@@ -30,21 +32,29 @@ const BetItem = ({
   };
   
   return (
-    <div className={cn(
-      "rounded-xl p-5 text-white overflow-hidden relative",
-      gradientClasses[gradient]
-    )}>
+    <div 
+      className={cn(
+        "rounded-xl p-5 text-white overflow-hidden relative transition-transform duration-200 hover:scale-[1.02]",
+        gradientClasses[gradient],
+        onClick ? "cursor-pointer" : ""
+      )}
+      onClick={onClick}
+    >
       <div className="absolute top-0 right-0 px-3 py-1.5 text-xs font-medium bg-white/20 backdrop-blur-sm rounded-bl-xl">
         {type} • in {expiresIn}
       </div>
       
       <h3 className="text-xl font-bold mb-4 mt-6">{title}</h3>
       
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div className={cn(
+        "grid gap-2 mb-4",
+        options.length <= 2 ? "grid-cols-2" : options.length <= 4 ? "grid-cols-2" : "grid-cols-3"
+      )}>
         {options.map((option, index) => (
           <button
             key={index}
             className="py-2 px-3 rounded-lg text-left transition-all duration-200 bg-white/10 hover:bg-white/20 text-white font-medium truncate"
+            onClick={(e) => e.stopPropagation()}
           >
             {option}
           </button>

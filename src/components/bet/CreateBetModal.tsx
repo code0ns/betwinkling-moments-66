@@ -1,9 +1,11 @@
-
 import React, { useState } from 'react';
 import { X, Plus, Clock, DollarSign, Award, Flame, Share2 } from 'lucide-react';
 import Button from '../shared/Button';
 import QRCode from '../shared/QRCode';
 import { cn } from '@/lib/utils';
+import betService from '@/services/betService';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 interface CreateBetModalProps {
   isOpen: boolean;
@@ -17,11 +19,14 @@ const CreateBetModal = ({ isOpen, onClose }: CreateBetModalProps) => {
     title: '',
     description: '',
     options: ['Yes', 'No'],
-    stakeType: 'points',
+    stakeType: 'points' as 'points' | 'money' | 'dare',
     stakeValue: 100,
-    // Ensure stakeValue is initialized as a number
     stakeText: '',
   });
+  
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [createdBetId, setCreatedBetId] = useState<string | null>(null);
   
   if (!isOpen) return null;
   
@@ -34,9 +39,30 @@ const CreateBetModal = ({ isOpen, onClose }: CreateBetModalProps) => {
         setStep('stakes');
         break;
       case 'stakes':
+        const formattedOptions = selectedType === 'multiple' 
+          ? betDetails.options.map((label, index) => ({ id: `new-${index}`, label }))
+          : [{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'No' }];
+          
+        const newBet = betService.createBet({
+          title: betDetails.title,
+          description: betDetails.description || undefined,
+          stake: {
+            type: betDetails.stakeType,
+            value: betDetails.stakeType === 'dare' ? betDetails.stakeText : betDetails.stakeValue,
+          },
+          options: formattedOptions,
+        });
+        
+        setCreatedBetId(newBet.id);
+        toast({
+          description: "Bet created successfully!",
+          variant: "default",
+        });
+        
         setStep('share');
         break;
       default:
+        navigate('/profile');
         onClose();
     }
   };
@@ -54,6 +80,48 @@ const CreateBetModal = ({ isOpen, onClose }: CreateBetModalProps) => {
         break;
       default:
         onClose();
+    }
+  };
+  
+  const inviteUrl = createdBetId ? betService.generateInviteCode(createdBetId) : '';
+  
+  const handleCopyLink = async () => {
+    if (!inviteUrl) return;
+    
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      toast({
+        description: "Link copied to clipboard!",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        description: "Failed to copy link",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleShare = async () => {
+    if (!inviteUrl) return;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: betDetails.title,
+          text: `Join my bet: ${betDetails.title}`,
+          url: inviteUrl,
+        });
+        toast({
+          description: "Shared successfully!",
+          variant: "default",
+        });
+      } catch (error) {
+        console.error("Error sharing:", error);
+        handleCopyLink();
+      }
+    } else {
+      handleCopyLink();
     }
   };
   

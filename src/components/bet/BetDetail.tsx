@@ -1,29 +1,36 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { User, Clock, Award, MessageSquare, ThumbsUp, Share2 } from 'lucide-react';
 import Button from '../shared/Button';
 import { useToast } from '@/hooks/use-toast';
+import betService from '@/services/betService';
+
+interface BetOption {
+  id: string;
+  label: string;
+  percentage: number;
+  votes: number;
+}
 
 interface BetDetailProps {
+  id?: string;
   title: string;
   description?: string;
   participants: number;
   timeLeft: string;
   pool: string;
-  options: {
-    label: string;
-    percentage: number;
-    votes: number;
-  }[];
+  options: BetOption[];
   insights?: string;
   reactions?: {
     emoji: string;
     count: number;
   }[];
+  isPreview?: boolean;
 }
 
 const BetDetail = ({
+  id,
   title,
   description,
   participants,
@@ -31,58 +38,124 @@ const BetDetail = ({
   pool,
   options: initialOptions,
   insights,
-  reactions: initialReactions = [
-    { emoji: "😂", count: 5 },
-    { emoji: "🔥", count: 3 },
-    { emoji: "😮", count: 2 }
-  ]
+  reactions: initialReactions,
+  isPreview = false
 }: BetDetailProps) => {
   // State management
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [options, setOptions] = useState(initialOptions);
-  const [reactions, setReactions] = useState(initialReactions);
+  const [options, setOptions] = useState<BetOption[]>(initialOptions);
+  const [reactions, setReactions] = useState(initialReactions || [
+    { emoji: "😂", count: 5 },
+    { emoji: "🔥", count: 3 },
+    { emoji: "😮", count: 2 }
+  ]);
   const [hasDoubledDown, setHasDoubledDown] = useState(false);
   const [hasLiked, setHasLiked] = useState(false);
   const { toast } = useToast();
 
+  // Load bet data from service if we have an ID
+  useEffect(() => {
+    if (id && !isPreview) {
+      const bet = betService.getBetById(id);
+      if (bet) {
+        // Update options with the latest data
+        setOptions(bet.options.map(option => ({
+          id: option.id,
+          label: option.label,
+          percentage: option.percentage || 0,
+          votes: option.votes || 0
+        })));
+        
+        // Set user's selected option if they voted
+        if (bet.userVote) {
+          setSelectedOption(bet.userVote);
+        }
+        
+        // Set reactions
+        if (bet.reactions) {
+          setReactions(bet.reactions);
+        }
+        
+        // Set doubled down status
+        setHasDoubledDown(bet.userDoubledDown || false);
+        
+        // Set liked status
+        setHasLiked(bet.userLiked || false);
+      }
+    }
+  }, [id, isPreview]);
+
   // Handle betting on an option
-  const handleBet = (optionLabel: string) => {
-    if (selectedOption === optionLabel) {
+  const handleBet = (optionId: string) => {
+    if (isPreview) {
+      toast({
+        title: "This is just a preview",
+        description: "In a real bet, your vote would be recorded",
+        variant: "default",
+      });
+      return;
+    }
+    
+    if (!id) {
+      toast({
+        title: "Error",
+        description: "Could not identify this bet",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedOption === optionId) {
       toast({
         title: "Already selected",
-        description: `You've already bet on ${optionLabel}`,
+        description: `You've already bet on this option`,
         variant: "default",
       });
       return;
     }
 
-    // Update options with new vote
-    const updatedOptions = options.map(option => {
-      if (option.label === optionLabel) {
-        return { ...option, votes: option.votes + 1 };
-      }
-      return option;
-    });
-
-    // Recalculate percentages
-    const totalVotes = updatedOptions.reduce((sum, option) => sum + option.votes, 0);
-    const finalOptions = updatedOptions.map(option => ({
-      ...option,
-      percentage: Math.round((option.votes / totalVotes) * 100)
-    }));
-
-    setOptions(finalOptions);
-    setSelectedOption(optionLabel);
-
-    toast({
-      title: "Bet placed!",
-      description: `You bet on ${optionLabel}. Good luck!`,
-      variant: "default",
-    });
+    // Use betService to update the bet
+    const updatedBet = betService.placeBet(id, optionId);
+    
+    if (updatedBet) {
+      // Update local state
+      setOptions(updatedBet.options.map(option => ({
+        id: option.id,
+        label: option.label,
+        percentage: option.percentage || 0,
+        votes: option.votes || 0
+      })));
+      
+      setSelectedOption(optionId);
+      
+      toast({
+        title: "Bet placed!",
+        description: `You bet on ${updatedBet.options.find(o => o.id === optionId)?.label}. Good luck!`,
+        variant: "default",
+      });
+    }
   };
 
   // Handle double down
   const handleDoubleDown = () => {
+    if (isPreview) {
+      toast({
+        title: "This is just a preview",
+        description: "In a real bet, you would double down on your selection",
+        variant: "default",
+      });
+      return;
+    }
+    
+    if (!id) {
+      toast({
+        title: "Error",
+        description: "Could not identify this bet",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!selectedOption) {
       toast({
         title: "Can't double down",
@@ -101,83 +174,115 @@ const BetDetail = ({
       return;
     }
 
-    // Update options with additional vote on selected option
-    const updatedOptions = options.map(option => {
-      if (option.label === selectedOption) {
-        return { ...option, votes: option.votes + 1 };
-      }
-      return option;
-    });
-
-    // Recalculate percentages
-    const totalVotes = updatedOptions.reduce((sum, option) => sum + option.votes, 0);
-    const finalOptions = updatedOptions.map(option => ({
-      ...option,
-      percentage: Math.round((option.votes / totalVotes) * 100)
-    }));
-
-    setOptions(finalOptions);
-    setHasDoubledDown(true);
+    // Use betService to double down
+    const updatedBet = betService.doubleDown(id);
     
-    toast({
-      title: "Doubled down!",
-      description: `You've increased your bet on ${selectedOption}`,
-      variant: "default",
-    });
+    if (updatedBet) {
+      // Update local state
+      setOptions(updatedBet.options.map(option => ({
+        id: option.id,
+        label: option.label,
+        percentage: option.percentage || 0,
+        votes: option.votes || 0
+      })));
+      
+      setHasDoubledDown(true);
+      
+      toast({
+        title: "Doubled down!",
+        description: `You've increased your bet on ${updatedBet.options.find(o => o.id === selectedOption)?.label}`,
+        variant: "default",
+      });
+    }
   };
 
   // Handle reactions
   const handleReaction = (emoji: string) => {
-    // Check if the emoji already exists in reactions
-    const existingReactionIndex = reactions.findIndex(r => r.emoji === emoji);
-    
-    if (existingReactionIndex >= 0) {
-      // Update existing reaction count
-      const updatedReactions = [...reactions];
-      updatedReactions[existingReactionIndex] = {
-        ...updatedReactions[existingReactionIndex],
-        count: updatedReactions[existingReactionIndex].count + 1
-      };
-      setReactions(updatedReactions);
-    } else {
-      // Add new reaction
-      setReactions([...reactions, { emoji, count: 1 }]);
+    if (isPreview) {
+      toast({
+        description: `You reacted with ${emoji} (preview only)`,
+        variant: "default",
+      });
+      return;
     }
-
-    toast({
-      description: `You reacted with ${emoji}`,
-      variant: "default",
-    });
+    
+    if (!id) {
+      toast({
+        title: "Error",
+        description: "Could not identify this bet",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Use betService to add reaction
+    const updatedBet = betService.addReaction(id, emoji);
+    
+    if (updatedBet && updatedBet.reactions) {
+      // Update local state
+      setReactions(updatedBet.reactions);
+      
+      toast({
+        description: `You reacted with ${emoji}`,
+        variant: "default",
+      });
+    }
   };
 
   // Handle like
   const handleLike = () => {
-    setHasLiked(!hasLiked);
+    if (isPreview) {
+      toast({
+        description: hasLiked ? "You unliked this bet (preview only)" : "You liked this bet (preview only)",
+        variant: "default",
+      });
+      setHasLiked(!hasLiked);
+      return;
+    }
     
-    toast({
-      description: hasLiked ? "You unliked this bet" : "You liked this bet",
-      variant: "default",
-    });
-  };
-
-  // Handle comment
-  const handleComment = () => {
-    toast({
-      title: "Comments",
-      description: "Comment functionality is coming soon!",
-      variant: "default",
-    });
+    if (!id) {
+      toast({
+        title: "Error",
+        description: "Could not identify this bet",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Use betService to toggle like
+    const updatedBet = betService.toggleLike(id);
+    
+    if (updatedBet) {
+      // Update local state
+      setHasLiked(updatedBet.userLiked || false);
+      
+      toast({
+        description: updatedBet.userLiked ? "You liked this bet" : "You unliked this bet",
+        variant: "default",
+      });
+    }
   };
 
   // Handle share
   const handleShare = async () => {
+    if (!id) {
+      toast({
+        title: "Error",
+        description: "Could not identify this bet",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const shareUrl = betService.generateInviteCode(id);
+    
     // Try to use the Web Share API if available
     if (navigator.share) {
       try {
         await navigator.share({
           title: title,
           text: `Check out this bet: ${title}`,
-          url: window.location.href,
+          url: shareUrl,
         });
         toast({
           description: "Shared successfully!",
@@ -185,15 +290,25 @@ const BetDetail = ({
         });
       } catch (error) {
         console.error("Error sharing:", error);
-        toast({
-          description: "Could not share, try copying the URL manually",
-          variant: "destructive",
-        });
+        // Fallback to clipboard copy
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          toast({
+            description: "Link copied to clipboard!",
+            variant: "default",
+          });
+        } catch (clipboardError) {
+          console.error("Error copying:", clipboardError);
+          toast({
+            description: "Could not copy link",
+            variant: "destructive",
+          });
+        }
       }
     } else {
       // Fallback to clipboard copy
       try {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText(shareUrl);
         toast({
           description: "Link copied to clipboard!",
           variant: "default",
@@ -232,7 +347,7 @@ const BetDetail = ({
             
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              <span>{timeLeft} left</span>
+              <span>{timeLeft}</span>
             </div>
           </div>
           
@@ -263,8 +378,8 @@ const BetDetail = ({
       )}
       
       <div className="p-4 space-y-3">
-        {options.map((option, index) => (
-          <div key={index} className="space-y-1">
+        {options.map((option) => (
+          <div key={option.id} className="space-y-1">
             <div className="flex items-center justify-between text-sm">
               <span>{option.label}</span>
               <span className="font-medium">{option.percentage}%</span>
@@ -273,7 +388,7 @@ const BetDetail = ({
               <div 
                 className={cn(
                   "h-full", 
-                  selectedOption === option.label ? "bg-purple-500" : "bg-primary",
+                  selectedOption === option.id ? "bg-purple-500" : "bg-primary",
                   { "transition-all duration-500": true }
                 )}
                 style={{ width: `${option.percentage}%` }}
@@ -287,22 +402,34 @@ const BetDetail = ({
         ))}
         
         <div className="grid grid-cols-2 gap-3 mt-6">
-          <Button 
-            onClick={() => handleBet("Yes")}
-            disabled={selectedOption === "Yes"}
-            className={selectedOption === "Yes" ? "bg-purple-500 hover:bg-purple-500/90" : ""}
-          >
-            {selectedOption === "Yes" ? "Bet Placed!" : "Bet on Yes"}
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => handleBet("No")}
-            disabled={selectedOption === "No"}
-            className={selectedOption === "No" ? "bg-purple-500 hover:bg-purple-500/90 text-white" : ""}
-          >
-            {selectedOption === "No" ? "Bet Placed!" : "Bet on No"}
-          </Button>
+          {options.slice(0, 2).map((option) => (
+            <Button 
+              key={option.id}
+              variant={option.id === options[0].id ? "default" : "outline"}
+              onClick={() => handleBet(option.id)}
+              disabled={selectedOption === option.id}
+              className={selectedOption === option.id ? "bg-purple-500 hover:bg-purple-500/90" : ""}
+            >
+              {selectedOption === option.id ? "Bet Placed!" : `Bet on ${option.label}`}
+            </Button>
+          ))}
         </div>
+        
+        {options.length > 2 && (
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            {options.slice(2, 4).map((option) => (
+              <Button 
+                key={option.id}
+                variant="outline"
+                onClick={() => handleBet(option.id)}
+                disabled={selectedOption === option.id}
+                className={selectedOption === option.id ? "bg-purple-500 hover:bg-purple-500/90 text-white" : ""}
+              >
+                {selectedOption === option.id ? "Bet Placed!" : `Bet on ${option.label}`}
+              </Button>
+            ))}
+          </div>
+        )}
         
         <Button 
           variant={hasDoubledDown ? "premium" : "ghost"} 
@@ -323,7 +450,10 @@ const BetDetail = ({
               <span className="text-xs">{reaction.count}</span>
             </div>
           ))}
-          <button className="px-2 py-1 rounded-full bg-secondary/50 text-sm hover:bg-secondary/80 transition-colors">
+          <button 
+            className="px-2 py-1 rounded-full bg-secondary/50 text-sm hover:bg-secondary/80 transition-colors"
+            onClick={() => handleReaction("😂")}
+          >
             + Add Reaction
           </button>
         </div>
@@ -354,7 +484,6 @@ const BetDetail = ({
             variant="ghost" 
             size="sm" 
             leadingIcon={<MessageSquare className="h-4 w-4" />}
-            onClick={handleComment}
           >
             Comment
           </Button>
