@@ -1,4 +1,3 @@
-
 import { addDays, addHours, formatDistanceToNow } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -48,7 +47,7 @@ const STORAGE_KEYS = {
   USER_CREATED_BETS: 'betapp_user_created_bets', // IDs of bets the user has created
 };
 
-// Mock data to start with
+// Import mock data
 import { trendingBets, recentBets } from '../lib/data';
 
 class BetService {
@@ -62,6 +61,57 @@ class BetService {
     this.userCreatedBets = new Set();
     this.loadFromStorage();
     this.initializeMockData();
+    
+    // Make sure we have the featured bet
+    if (!this.bets.has('featured-bet-1')) {
+      this.createFeaturedBet();
+    }
+  }
+
+  private createFeaturedBet() {
+    const featuredBet: Bet = {
+      id: 'featured-bet-1',
+      title: 'Will Alex actually show up to the party?',
+      description: 'Alex always says he\'ll come but never shows up. Let\'s see if tonight is different!',
+      created_by: {
+        name: 'Party Host',
+        initials: 'PH',
+      },
+      participants: 12,
+      expiresAt: addHours(new Date(), 2),
+      stake: {
+        type: 'money',
+        value: 50,
+      },
+      isTrending: true,
+      commentCount: 8,
+      options: [
+        { id: 'opt-1', label: 'Yes', votes: 8, percentage: 67 },
+        { id: 'opt-2', label: 'No', votes: 4, percentage: 33 },
+      ],
+      comments: [
+        {
+          id: uuidv4(),
+          author: 'Jamie',
+          text: 'He\'s always saying he\'ll come and then doesn\'t show up...',
+          timestamp: new Date(Date.now() - 1000 * 60 * 30),
+        },
+        {
+          id: uuidv4(),
+          author: 'Alex\'s Friend',
+          text: 'I texted him and he said he\'s definitely coming this time!',
+          timestamp: new Date(Date.now() - 1000 * 60 * 15),
+        },
+      ],
+      reactions: [
+        { emoji: '😂', count: 7 },
+        { emoji: '🤔', count: 5 },
+        { emoji: '🙏', count: 3 },
+      ],
+    };
+    
+    this.bets.set(featuredBet.id, featuredBet);
+    this.saveToStorage();
   }
 
   private loadFromStorage() {
@@ -122,19 +172,46 @@ class BetService {
     // Only initialize if we don't have data already
     if (this.bets.size === 0) {
       [...trendingBets, ...recentBets].forEach(bet => {
+        // Generate some mock comments for each bet
+        const mockComments = [
+          {
+            id: uuidv4(),
+            author: 'User1',
+            text: `I think ${bet.options && bet.options[0]?.label} is the most likely outcome.`,
+            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+          },
+          {
+            id: uuidv4(),
+            author: 'User2',
+            text: 'This is an interesting bet!',
+            timestamp: new Date(Date.now() - 1000 * 60 * 30),
+          },
+          {
+            id: uuidv4(),
+            author: 'User3',
+            text: 'I just placed my bet. Exciting!',
+            timestamp: new Date(Date.now() - 1000 * 60 * 10),
+          },
+        ];
+        
+        // Generate mock reactions
+        const mockReactions = [
+          { emoji: "😂", count: Math.floor(Math.random() * 10) + 1 },
+          { emoji: "🔥", count: Math.floor(Math.random() * 8) + 1 },
+          { emoji: "😮", count: Math.floor(Math.random() * 5) + 1 },
+          { emoji: "👍", count: Math.floor(Math.random() * 7) + 1 },
+        ];
+        
         this.bets.set(bet.id, {
           ...bet,
-          options: bet.options.map(option => ({
+          options: bet.options?.map(option => ({
             ...option,
             votes: Math.floor(Math.random() * 10) + 1,
             percentage: 0, // Will be calculated
-          })),
-          comments: [],
-          reactions: [
-            { emoji: "😂", count: Math.floor(Math.random() * 5) + 1 },
-            { emoji: "🔥", count: Math.floor(Math.random() * 5) + 1 },
-            { emoji: "😮", count: Math.floor(Math.random() * 5) + 1 }
-          ]
+          })) || [],
+          comments: mockComments,
+          reactions: mockReactions,
+          commentCount: mockComments.length,
         });
 
         // Calculate percentages

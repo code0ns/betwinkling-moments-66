@@ -65,7 +65,7 @@ const BetCard = ({ bet, className, variant = 'default' }: BetCardProps) => {
   
   return (
     <Link 
-      to={`/bets/${bet.id}`}
+      to={`/bet/${bet.id}`}
       className={cn(
         "block w-full transform transition-all duration-300 hover:-translate-y-1 focus:outline-none",
         isHovered ? "z-10" : "z-0",
